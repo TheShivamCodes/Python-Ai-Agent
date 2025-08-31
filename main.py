@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from google.genai import types
 from functions.get_files_info import schema_get_files_info
 from functions.get_file_content import schema_get_file_content
-from functions.run_python import schema_run_python
+from functions.run_python import schema_run_python_file
 from functions.write_file import schema_write_file
 from functions.call_functions import call_functions
 
@@ -14,7 +14,7 @@ available_functions = types.Tool(
     function_declarations=[
         schema_get_files_info,
         schema_get_file_content,
-        schema_run_python,
+        schema_run_python_file,
         schema_write_file,
     ]
 )
@@ -62,48 +62,50 @@ client = genai.Client(api_key=api_key)
 # 3. Define the model
 model_name = "gemini-2.0-flash-001"
 
-# 4. Generate content from the model
-response = client.models.generate_content (
-    model = model_name,
-    contents = messages,
-    config = types.GenerateContentConfig(
-        system_instruction=system_prompt,
-        tools = [available_functions],
-    )
-)
+# Refactoring for looping for the llm atmax given steps
+MAX_STEPS = 20
 
-# 6,9. Print token usage (prompt + response)
 if verbose:
-    print(f"\nUser prompt: {user_prompt}") # 9.Additional info only if verbose enabled
-    print(f"\nPrompt tokens: {response.usage_metadata.prompt_token_count}")
-    print(f"\nResponse tokens: {response.usage_metadata.candidates_token_count}")
+    print(f"\nUser prompt: {user_prompt}")
 
-# 5. Print the model's text response
-print("\nModel Response:")
-#print(response.text)
-"""
-if response.candidates[0].content.parts:
-    for part in response.candidates[0].content.parts:
-        if part.function_call:
-            function_call_part = part.function_call
-            print(f"Calling functions: {function_call_part.name}({function_call_part.args})")
-            break
-        else:
-            print(response.text)
-else:
-    print(response.text)
-"""
+for step in range(MAX_STEPS):
 
-if response.candidates[0].content.parts:
+    # 4. Generate content from the model
+    response = client.models.generate_content (
+        model = model_name,
+        contents = messages,
+        config = types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            tools = [available_functions],
+        )
+    )
+
+    candidate = response.candidates[0]
+    model_content = candidate.content
+    messages.append(model_content)
+
+    # 6,9. Print token usage (prompt + response)
+    if verbose:
+        print(f"\nUser prompt: {user_prompt}") # 9.Additional info only if verbose enabled
+        print(f"\nPrompt tokens: {response.usage_metadata.prompt_token_count}")
+        print(f"\nResponse tokens: {response.usage_metadata.candidates_token_count}")
+
+    done = False
+    
+    # 5. Print the model's text response
+    # Check each part of model response
+   
     for part in response.candidates[0].content.parts:
         if part.function_call:
             function_call_part = part.function_call
             # Call our dispatcher
             function_call_result = call_functions(function_call_part, verbose=verbose)
-
             # Make sure we got a valid response
             if not function_call_result.parts[0].function_response.response:
                 raise RuntimeError("Fatal: No function response returned")
+
+            # Tool result added into conversation
+            messages.append(function_call_result)
 
             if verbose:
                 print(f"-> {function_call_result.parts[0].function_response.response}")
@@ -111,7 +113,14 @@ if response.candidates[0].content.parts:
                 print("-> Function executed.")
             break
     else:
-        print(response.text)
-else:
-    print(response.text)
+        # No function call: final response
+        print("\nFinal response:")
+        if candidate.content.parts and candidate.content.parts[0].text:
+            print(candidate.content.parts[0].text)
+        else:
+            print("{No text returned}")
+        done = True
+
+    if done:
+        break
 
