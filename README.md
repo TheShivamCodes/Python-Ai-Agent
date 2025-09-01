@@ -3,36 +3,6 @@ Ai-Agent is an experimental AI-powered agent capable of interacting with your fi
 
 ---
 
-## Project Structure
-
-Ai-Agent
-├─ calculator
-│ ├─ pkg
-│ │ ├─ calculator.py
-│ │ └─ render.py
-│ ├─ README.md
-│ ├─ calculate.py
-│ ├─ list_example.py
-│ ├─ main.py
-│ └─ tests.py
-├─ functions
-│ ├─ call_functions.py
-│ ├─ config.py
-│ ├─ get_file_content.py
-│ ├─ get_files_info.py
-│ ├─ run_python.py
-│ ├─ web_search.py
-│ └─ write_file.py
-├─ LICENSE
-├─ README.md
-├─ agent.log
-├─ main.py
-├─ pyproject.toml
-├─ tests.py
-└─ uv.lock
-
----
-
 ## Features
 
 The Ai-Agent can:
