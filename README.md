@@ -23,7 +23,7 @@ All operations are safely scoped to a working directory to prevent accidental sy
 
 ```bash
 git clone https://github.com/TheShivamCodes/Python-Ai-Agent
-cd Ai-Agent
+cd Python-Ai-Agent
 
 Note:
 A virtual environment (venv) is a lightweight, isolated Python environment that allows you to manage dependencies for a specific project without interfering with your system Python or other projects. Here’s why it’s useful and why you need the commands:
